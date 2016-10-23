@@ -45,7 +45,7 @@ playersFromUsers GameConfig{..} = foldM userToPlayer M.empty
       y <- getStdRandom (randomR (hStart, hEnd))
       orien <- getStdRandom random
 
-      let player = Player pid nick Alive (x, y) orien []
+      let player = Player pid nick Alive (x, y) orien [(x,y)]
       return $ M.insert pid player players
 
     toRandomRange i = (round $ (fromIntegral i :: Double) / 4,
