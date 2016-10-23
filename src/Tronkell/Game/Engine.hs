@@ -3,7 +3,7 @@
 module Tronkell.Game.Engine where
 
 import Control.Monad.State.Strict
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, catMaybes)
 import qualified Data.Map as Map
 
 import Tronkell.Types
@@ -98,11 +98,12 @@ tick :: State Game [OutEvent]
 tick  = do
   game@Game{..} <- get
   let playersAndMovesMap = Map.map (movePlayerForward gameConfig) gamePlayers
-      playersAfterMove   = playersAfterCollision . Map.map fst $ playersAndMovesMap
+      (playersAfterMove, deadEvents) = playersAfterCollision . Map.map fst $ playersAndMovesMap
       newGame            = game { gamePlayers = playersAfterMove }
       moves              = concat <$> Map.elems . Map.map snd $ playersAndMovesMap
+
   put newGame
-  return moves
+  return $ moves ++ deadEvents
 
 turnRight :: PlayerId -> State Game [OutEvent]
 turnRight = turn (getNextEnum 1)
@@ -139,13 +140,17 @@ orientations = [minBound..maxBound]
 deadPlayers :: Game -> [PlayerId]
 deadPlayers = Map.keys . Map.filter ((== Dead) . playerStatus) . gamePlayers
 
-playersAfterCollision :: Map.Map PlayerId Player -> Map.Map PlayerId Player
+playersAfterCollision :: Map.Map PlayerId Player -> (Map.Map PlayerId Player, [OutEvent])
 playersAfterCollision players =
-  Map.map (\ player ->
-            if isHeadInATrail player players
-            then player { playerStatus = Dead }
-            else player)
-          players
+  let playersWithDeadEvent =
+        Map.map (\ player ->
+                     if isHeadInATrail player players
+                     then ( player { playerStatus = Dead }
+                          , Just $ PlayerDied (playerId player) (playerCoordinate player) )
+                     else (player, Nothing))
+                players
+  in ( Map.map fst playersWithDeadEvent
+     , catMaybes . Map.elems . Map.map snd $ playersWithDeadEvent )
   where
     isHeadInATrail player allPlayers =
       any (\ player2 -> (playerId player) /= (playerId player2) &&
