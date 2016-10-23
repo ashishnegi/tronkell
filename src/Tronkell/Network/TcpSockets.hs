@@ -11,9 +11,10 @@ import Control.Exception (handle, SomeException(..))
 import Control.Monad (forever, when)
 import qualified Data.Text as T (pack)
 
-start :: Con.MVar ST.UserID -> ST.NetworkChans -> Con.Chan ST.OutMessage -> IO ()
-start uIdGen chans outChan = withSocketsDo $ do
-  sock <- listenOn . PortNumber $ 4242
+start :: ST.ServerConfig -> Con.MVar ST.UserID -> ST.NetworkChans -> Con.Chan ST.OutMessage -> IO ()
+start sConfig uIdGen chans outChan = withSocketsDo $ do
+  -- can not use sConfig port as it eats the websocket connections..
+  sock <- listenOn . PortNumber $ 4242 -- fromIntegral (ST.serverPort sConfig)
   tcpMainLoop uIdGen chans outChan sock
 
 tcpMainLoop :: Con.MVar ST.UserID -> ST.NetworkChans -> Con.Chan ST.OutMessage -> Socket -> IO ()

@@ -12,13 +12,12 @@ import Json.Encode as Encode
 import Color exposing (Color)
 import String
 
-wsserver = "ws://localhost:8331"
 playerColors = List.append [Color.yellow, Color.blue, Color.brown] (List.repeat 100 Color.black)
 
-listenServerMsg = WebSocket.listen wsserver (decodeMsg playerColors)
+listenServerMsg wsserver = WebSocket.listen wsserver (decodeMsg playerColors)
 
-sendServerMsg : Msg -> Cmd Msg
-sendServerMsg msg = WebSocket.send wsserver (encodeMsg msg)
+sendServerMsg : String -> Msg -> Cmd Msg
+sendServerMsg wsserver msg = WebSocket.send wsserver (encodeMsg msg)
 
 decodeMsg : List Color -> String -> Msg
 decodeMsg colors json =

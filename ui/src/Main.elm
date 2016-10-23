@@ -9,12 +9,12 @@ import Subscription exposing (subscriptions)
 import Html.App as App
 
 main =
-    App.program
+    App.programWithFlags
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
         }
 
-init : (Model, Cmd Msg)
-init = (Model Nothing Nothing Nothing Nothing, Cmd.none)
+init : String -> (Model, Cmd Msg)
+init wsserver = (Model Nothing Nothing Nothing Nothing wsserver, Cmd.none)

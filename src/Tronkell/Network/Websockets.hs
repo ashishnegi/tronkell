@@ -16,9 +16,9 @@ import qualified Tronkell.Server.Types as ST
 import qualified Tronkell.Data.Parse as TP
 import qualified Tronkell.Network.Utils as NU (nextUserID)
 
-start :: Con.MVar ST.UserID -> ST.NetworkChans -> Con.Chan ST.OutMessage -> IO ()
-start uIdGen chans outChan = Warp.runSettings
-  (Warp.setPort 8331 Warp.defaultSettings)
+start :: ST.ServerConfig -> Con.MVar ST.UserID -> ST.NetworkChans -> Con.Chan ST.OutMessage -> IO ()
+start sConfig uIdGen chans outChan = Warp.runSettings
+  (Warp.setPort (ST.serverPort sConfig) Warp.defaultSettings)
   $ WaiWS.websocketsOr WS.defaultConnectionOptions (websocketHandler uIdGen chans outChan) staticApp
 
 staticApp :: Network.Wai.Application

@@ -10,12 +10,17 @@ import qualified Data.Text as T
 type NetworkChans = (Chan InMessage, Chan (UserID, OutMessage))
 
 data Server = Server { serverGameConfig :: Game.GameConfig
+                     , serverConfig     :: ServerConfig
                      , serverUsers      :: MVar (M.Map UserID User)
                      , networkChans     :: NetworkChans
                      , serverChan       :: TChan InMessage
                      , clientsChan      :: Chan OutMessage
                      , internalChan     :: Chan ServerSignals
                      }
+
+newtype ServerConfig = ServerConfig
+                       { serverPort :: Int
+                       }
 
 newtype UserID = UserID { getUserID :: Int }
                  deriving (Eq, Show, Ord)

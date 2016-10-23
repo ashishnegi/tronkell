@@ -21,8 +21,8 @@ import Control.Monad.Fix (fix)
 import qualified Data.Map as M
 import qualified Data.List as L (foldl')
 
-startServer :: Game.GameConfig -> IO ()
-startServer gConfig = do
+startServer :: Server.ServerConfig -> Game.GameConfig -> IO ()
+startServer sConfig gConfig = do
   firstUId              <- newMVar $ UserID 0
   playersVar            <- newMVar M.empty
   networkInChan         <- newChan
@@ -32,7 +32,7 @@ startServer gConfig = do
   internalChan          <- newChan
 
   let networkChans = (networkInChan, clientSpecificOutChan)
-      server = Server gConfig playersVar networkChans serverChan clientsChan internalChan
+      server = Server gConfig sConfig playersVar networkChans serverChan clientsChan internalChan
 
   -- start game server : one game at a time.
   gameThread <- forkIO $ forever $ do
@@ -40,8 +40,8 @@ startServer gConfig = do
     gameEngineThread server Nothing
 
   -- start network
-  wsThread  <- forkIO $ W.start firstUId networkChans clientsChan
-  tcpThread <- forkIO $ Tcp.start firstUId networkChans clientsChan
+  wsThread  <- forkIO $ W.start sConfig firstUId networkChans clientsChan
+  tcpThread <- forkIO $ Tcp.start sConfig firstUId networkChans clientsChan
   -- to avoid space msg leak..
   forkIO . forever . readChan $ clientSpecificOutChan
   forkIO . forever . readChan $ clientsChan

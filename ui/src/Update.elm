@@ -18,9 +18,9 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         PlayerName name  -> ( { model | nick = Just name }, Cmd.none )
-        RegisterNick     -> ( model, registerNickCmd model.nick )
-        PlayerReady      -> ( model, sendServerMsg PlayerReady )
-        PlayerQuit       -> ( model, sendServerMsg PlayerQuit )
+        RegisterNick     -> ( model, registerNickCmd model )
+        PlayerReady      -> ( model, sendServerMsg model.wsserver PlayerReady )
+        PlayerQuit       -> ( model, sendServerMsg model.wsserver PlayerQuit )
         MoveLeft         -> ( model, getMoveCmd model MoveLeft )
         MoveRight        -> ( model, getMoveCmd model MoveRight )
         MoveUp           -> ( model, getMoveCmd model MoveUp )
@@ -40,12 +40,12 @@ update msg model =
 
         NoOp -> ( model, Cmd.none )
 
-registerNickCmd : Maybe GP.PlayerName -> Cmd Msg
-registerNickCmd nick =
-    case nick of
+registerNickCmd : Model -> Cmd Msg
+registerNickCmd model =
+    case model.nick of
         Nothing -> Cmd.none
         Just p -> if String.length p > 0
-                  then sendServerMsg (PlayerName p)
+                  then sendServerMsg model.wsserver (PlayerName p)
                   else Cmd.none
 
 getMoveCmd : Model -> Msg -> Cmd Msg
@@ -70,7 +70,7 @@ getMoveCmd model msg =
               log_ = Debug.log "orien, msg, nextMove : " (orien, msg, nextMove)
           in case nextMove of
                  Nothing -> Cmd.none
-                 Just move -> sendServerMsg move
+                 Just move -> sendServerMsg model.wsserver move
     in case (model.myId, model.grid) of
            (Just pid, Just grid) ->
                let mes = List.filter (\pc -> pc.player.id == pid) grid.playerCells

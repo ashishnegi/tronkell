@@ -8,4 +8,5 @@ type alias Model =
     , nick     : Maybe GP.PlayerName
     , myId     : Maybe GP.PlayerId
     , winnerId : Maybe GP.PlayerId
+    , wsserver : String
     }

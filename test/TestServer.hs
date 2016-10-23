@@ -21,14 +21,15 @@ instance Show Server where
   show Server{..} = "Server: " ++ show serverGameConfig
 
 genServer = do
-    let conf = GTypes.GameConfig 100 100 1 1
+    let gConf = GTypes.GameConfig 100 100 1 1
+        sConf = STypes.ServerConfig 4242
     users <- newMVar M.empty
     networkInChan         <- newChan
     clientSpecificOutChan <- newChan
     serverChan <- atomically newTChan
     clientsChan <- newChan
     internalChan <- newChan
-    return $ Server conf users (networkInChan, clientSpecificOutChan) serverChan clientsChan internalChan
+    return $ Server gConf sConf users (networkInChan, clientSpecificOutChan) serverChan clientsChan internalChan
 
 -- rethink the tests.
 main :: IO ()

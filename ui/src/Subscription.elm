@@ -8,7 +8,7 @@ import ServerMsg exposing (listenServerMsg)
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch [ Keyboard.ups keyToMsg
-              , listenServerMsg
+              , listenServerMsg model.wsserver
               ]
 
 keyToMsg : KeyCode -> Msg
