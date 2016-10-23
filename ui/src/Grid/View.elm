@@ -19,9 +19,12 @@ type alias Boundary = (Float, Float)
 view : Grid -> Html Msg
 view grid =
     div []
-        [ gridToList grid
+        [ div []
+              [ text "Playground" ]
+        , gridToList grid
            |> List.map (renderCell (grid.width, grid.height))
-           |> C.collage (round (grid.width * cellWidth)) (round (grid.height * cellHeight))
+              -- adding 1 to the width/height as top and left most layer is cut into half..
+           |> C.collage (round ((grid.width + 1) * cellWidth)) (round ((grid.height + 1) * cellHeight))
            |> E.toHtml
 
         -- debugging..
@@ -41,8 +44,9 @@ playerInfoView cell =
     div []
         [ text (toString cell.player) ]
 
+-- Boundary : middle point is (0,0) ; just like a graph ; top-left is (-w/2,h/2)
 bringToCorner : Boundary -> (Float, Float) -> (Float, Float)
-bringToCorner (w, h) (x, y) = (x - w / 2 + 0.5, (h - y) - h / 2 + 0.5)
+bringToCorner (w, h) (x, y) = (x - w / 2, h / 2 - y)
 
 cellStructure : Cell -> C.Shape
 cellStructure cell =
