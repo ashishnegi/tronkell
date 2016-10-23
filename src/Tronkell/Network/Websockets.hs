@@ -6,6 +6,7 @@ import qualified Network.Wai.Handler.WebSockets as WaiWS
 import qualified Network.Wai.Application.Static as Static
 import qualified Network.Wai
 import qualified Control.Concurrent as Con
+import qualified WaiAppStatic.Types as WAST
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy.Char8
 import Control.Exception (handle, SomeException(..))
@@ -22,7 +23,10 @@ start sConfig uIdGen chans outChan = Warp.runSettings
   $ WaiWS.websocketsOr WS.defaultConnectionOptions (websocketHandler uIdGen chans outChan) staticApp
 
 staticApp :: Network.Wai.Application
-staticApp = Static.staticApp . Static.defaultWebAppSettings $ "ui/public"
+staticApp = let appSettings =  Static.defaultFileServerSettings $ "ui/public"
+                redirectSettings = appSettings { WAST.ssRedirectToIndex = True
+                                               , WAST.ssAddTrailingSlash = True }
+            in Static.staticApp redirectSettings
 
 websocketHandler :: Con.MVar ST.UserID -> ST.NetworkChans -> Con.Chan ST.OutMessage -> WS.ServerApp
 websocketHandler uIdGen (inChan, clientSpecificOutChan) outChan pendingConnection = do
