@@ -5,6 +5,7 @@ module Tronkell.Game.Engine where
 import Control.Monad.State.Strict
 import Data.Maybe (fromJust, catMaybes)
 import qualified Data.Map as Map
+import qualified Data.List as DL
 
 import Tronkell.Types
 import Tronkell.Game.Types
@@ -153,6 +154,9 @@ playersAfterCollision players =
      , catMaybes . Map.elems . Map.map snd $ playersWithDeadEvent )
   where
     isHeadInATrail player allPlayers =
-      any (\ player2 -> (playerId player) /= (playerId player2) &&
-                        (playerCoordinate player) `elem` (playerTrail player2))
+      any (\ player2 -> ((playerId player == playerId player2) && isSelfHitter player) ||
+                        ((playerId player /= playerId player2) && elem (playerCoordinate player) (playerTrail player2)))
           allPlayers
+
+    isSelfHitter player =
+      (length . DL.elemIndices (playerCoordinate player) $ (playerTrail player)) > 1
