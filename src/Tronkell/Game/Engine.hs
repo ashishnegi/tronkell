@@ -76,7 +76,7 @@ computePlayerStatus (GameConfig w h _ _) (x, y) =
 movePlayerForward :: GameConfig -> Player -> (Player, [OutEvent])
 movePlayerForward gameConfig player@Player{..} =
   if playerStatus == Dead
-  then (player, [])
+  then (player, []) -- Are we eating some bad state bug ?
   else let (x,y)       = playerCoordinate
            newPosition = case playerOrientation of
                       North -> (x, y-1)
@@ -85,18 +85,21 @@ movePlayerForward gameConfig player@Player{..} =
                       West  -> (x-1, y)
            newCoordinate = stopAtBoundary gameConfig newPosition
            newStatus     = computePlayerStatus gameConfig newPosition
-       in (player { playerCoordinate = newCoordinate,
-                    playerStatus     = newStatus },
-           PlayerMoved playerId newCoordinate playerOrientation :
-            case newStatus of
-              Alive -> []
-              Dead  -> [PlayerDied playerId newCoordinate])
+           newPlayer     = player { playerCoordinate = newCoordinate
+                                  , playerStatus     = newStatus
+                                  , playerTrail      = newCoordinate : playerTrail }
+           deadEvents    = case newStatus of
+                             Alive -> []
+                             Dead  -> [PlayerDied playerId newCoordinate]
+       in ( newPlayer
+          , PlayerMoved playerId newCoordinate playerOrientation : deadEvents )
 
 tick :: State Game [OutEvent]
 tick  = do
   game@Game{..} <- get
   let playersAndMovesMap = Map.map (movePlayerForward gameConfig) gamePlayers
-      newGame            = game { gamePlayers = Map.map fst playersAndMovesMap }
+      playersAfterMove   = playersAfterCollision . Map.map fst $ playersAndMovesMap
+      newGame            = game { gamePlayers = playersAfterMove }
       moves              = concat <$> Map.elems . Map.map snd $ playersAndMovesMap
   put newGame
   return moves
@@ -135,3 +138,16 @@ orientations = [minBound..maxBound]
 
 deadPlayers :: Game -> [PlayerId]
 deadPlayers = Map.keys . Map.filter ((== Dead) . playerStatus) . gamePlayers
+
+playersAfterCollision :: Map.Map PlayerId Player -> Map.Map PlayerId Player
+playersAfterCollision players =
+  Map.map (\ player ->
+            if isHeadInATrail player players
+            then player { playerStatus = Dead }
+            else player)
+          players
+  where
+    isHeadInATrail player allPlayers =
+      any (\ player2 -> (playerId player) /= (playerId player2) &&
+                        (playerCoordinate player) `elem` (playerTrail player2))
+          allPlayers

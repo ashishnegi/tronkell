@@ -123,8 +123,10 @@ main = hspec $ do
       property $ \game (Positive steps) ->
         let (_, game') = runEngine gameEngine game $ replicate steps Tick
             expectedPositions = Map.map (movePlayer steps (gameConfig game)) $ gamePlayers game
-            actualPositions = getPlayersField playerCoordinate game'
-        in (expectedPositions == actualPositions) || (gameStatus game' == Finished)
+        in (gameStatus game' == Finished) ||
+           (and . Map.elems . Map.intersectionWith (\ expectedPos actualPlayer -> playerStatus actualPlayer == Dead ||
+                                                                                  expectedPos == (playerCoordinate actualPlayer))
+                                                   expectedPositions $ (gamePlayers game'))
 
     it "changes player status to dead after he quits" $
       property $ \game@Game{..} (Positive playerNo) ->
