@@ -26,8 +26,8 @@ getUserId msg =
     PlayerName      uId _ -> uId
     UserExit        uId -> uId
 
-outEventToOutMessage :: M.Map UserID User -> OutEvent -> OutMessage
-outEventToOutMessage _ event =
+outEventToOutMessage :: OutEvent -> OutMessage
+outEventToOutMessage event =
   case event of
     Game.PlayerMoved pid coord orien -> Server.PlayerMoved (playerIdToUserId pid) coord orien
     Game.PlayerDied  pid coord       -> Server.PlayerDied  (playerIdToUserId pid) coord

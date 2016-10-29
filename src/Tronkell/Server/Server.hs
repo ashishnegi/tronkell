@@ -206,11 +206,11 @@ processMessages server@Server{..} game inMsgs = do
                                          usersAfterMsg (UserInMessage (PlayerExit deadUId)) newUsers)
                                      users deadUserIds
 
+-- todo : this can be made pure. remove writeList2Chan
 processEvent :: Server -> Maybe Game -> InputEvent -> IO (Maybe Game)
 processEvent Server{..} g event = do
-  users               <- readMVar serverUsers
   let (outEvs, game') = runGame g event
-      outMsgs         = SUtils.outEventToOutMessage users <$> outEvs
+      outMsgs         = SUtils.outEventToOutMessage <$> outEvs
   writeList2Chan clientsChan outMsgs
   return game'
 
