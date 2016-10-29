@@ -7,9 +7,11 @@ import System.Random
 import Data.String (fromString)
 import Data.List (nub, nubBy)
 import qualified Data.Map as Map
+import qualified Data.Text as T
 
 import Tronkell.Types
 import Tronkell.Game.Types
+import Tronkell.Server.Types
 import Tronkell.Game.Engine
 
 import Test.Hspec
@@ -63,6 +65,26 @@ instance Arbitrary Game where
     let mp = Map.fromList . map (\p -> (playerId p, p)) $ ps
     return $ Game Nothing mp InProgress conf
 
+instance Arbitrary UserStatus where
+  arbitrary = do
+    statusInt <- (arbitrary :: Gen Int)
+    case statusInt `mod` 2 of
+      0 -> return Waiting
+      1 -> return Ready
+      _ -> error "should never come here"
+
+instance Arbitrary UserID where
+  arbitrary = do
+    userId <- arbitrary
+    return $ UserID userId
+
+instance Arbitrary User where
+  arbitrary = do
+    userID <- arbitrary
+    name   <- T.pack . fromString <$> arbitrary
+    state  <- arbitrary
+    return $ User userID (Just name) state
+
 isValidPlayer :: GameConfig -> Player -> Bool
 isValidPlayer (GameConfig w h _ _) (Player _ _ _ (x, y) _ _) = x < w && y < h
 
@@ -72,4 +94,3 @@ areOverlappingPlayers p1 p2 =
 
 isPlayerOnGrid :: Game -> Player -> Bool
 isPlayerOnGrid game = isValidPlayer (gameConfig game)
-

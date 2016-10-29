@@ -29,7 +29,7 @@ newtype UserID = UserID { getUserID :: Int }
 data User = User { userId    :: UserID
                  , userNick  :: Maybe T.Text
                  , userState :: UserStatus
-                 } deriving (Show)
+                 } deriving (Eq, Show)
 
 data UserStatus = Waiting | Ready
                   deriving (Eq, Enum, Bounded, Show)
@@ -57,3 +57,4 @@ data ServerSignals = GameReadySignal Game.GameConfig [Game.Player]
 data UserMessage = UserInMessage InMessage
                  | MoveAllToStatus UserStatus
                  | NewUser User
+                 deriving (Show)
