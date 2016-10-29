@@ -55,7 +55,7 @@ startServer sConfig gConfig = do
 
   where
     moveAllPlayersToWaiting serverUsers =
-      modifyMVar_ serverUsers (return . M.map (\u -> u { userState = Waiting }))
+      modifyMVar_ serverUsers (return . usersAfterMsg (MoveAllToStatus Waiting))
 
 clientsLoop :: Server -> M.Map UserID (TChan InMessage) -> IO ()
 clientsLoop server@Server{..} userChans = do
@@ -64,8 +64,8 @@ clientsLoop server@Server{..} userChans = do
   case msg of
     PlayerJoined uId -> do
       userChan <- atomically newTChan
-      let userChans' = M.insert uId userChan userChans -- check if uId already not there
-      void $ forkIO $ runClient uId userChan server -- remove useChan after runClient returns.
+      let userChans' = M.insert uId userChan userChans -- todo : check if uId already not there
+      void $ forkIO $ runClient uId userChan server -- todo : remove userChan after runClient returns.
       clientsLoop server userChans'
     _ -> do
       let uId = SUtils.getUserId msg
@@ -88,10 +88,7 @@ runClient uId clientChan server@Server{..} = do
     Just _ -> do
       let user = User uId nick Waiting
       failedToAdd <- modifyMVar serverUsers $ \users ->
-        -- for player we still have name as id ; so keep it unique.
-        if isNickTaken users nick
-        then return (users, True)
-        else return (M.insert uId user users, False)
+        return (usersAfterMsg (NewUser user) users, False)
 
       if failedToAdd
       then runClient uId clientChan server
@@ -99,8 +96,6 @@ runClient uId clientChan server@Server{..} = do
          atomically $ writeTChan serverChan $ PlayerJoined uId
          waitForPlayerReady clientSpecificOutChan nick
   where
-    isNickTaken users nick = any (\u -> nick == userNick u) users
-
     waitForPlayerReady clientSpecificOutChan nick = fix $ \ loop -> do
       writeChan clientSpecificOutChan $ (uId, ServerMsg $ "Hi.. " ++ T.unpack (fromJust nick) ++ ".. send \"ready\" when you are ready to play..")
       m <- atomically $ readTChan clientChan
@@ -161,7 +156,7 @@ oneSecond :: Int
 oneSecond = 1000000
 
 onUserExit :: UserID -> MVar (M.Map UserID User) -> IO ()
-onUserExit clientId serverUsers = modifyMVar_ serverUsers (return . M.delete clientId)
+onUserExit clientId serverUsers = modifyMVar_ serverUsers $ return . usersAfterMsg (UserInMessage (UserExit clientId))
 
 processMessages :: Server -> Maybe Game -> [InMessage] -> IO (Maybe Game)
 processMessages server@Server{..} game inMsgs = do
@@ -208,7 +203,7 @@ processMessages server@Server{..} game inMsgs = do
               let deadUserIds = map SUtils.playerIdToUserId $ Engine.deadPlayers g'
               in modifyMVar_ serverUsers $ \users ->
                    return $ L.foldl' (\newUsers deadUId ->
-                                         M.adjust (\u -> u { userState = Waiting }) deadUId newUsers)
+                                         usersAfterMsg (UserInMessage (PlayerExit deadUId)) newUsers)
                                      users deadUserIds
 
 processEvent :: Server -> Maybe Game -> InputEvent -> IO (Maybe Game)
@@ -240,3 +235,13 @@ runGame game event =
   case game of
     Nothing -> ([], Nothing)
     Just g  -> Just <$> Engine.runEngine Engine.gameEngine g [event]
+
+usersAfterMsg :: UserMessage -> Users -> Users
+usersAfterMsg msg users =
+  case msg of
+    UserInMessage (PlayerReady clientId) -> M.adjust (\u -> u { userState = Ready }) clientId users
+    UserInMessage (PlayerExit clientId)  -> M.adjust (\u -> u { userState = Waiting }) clientId users
+    UserInMessage (UserExit clientId)    -> M.delete clientId users
+    MoveAllToStatus status               -> M.map (\u -> u { userState = status }) users
+    NewUser user                         -> M.insert (userId user) user users
+    _ -> users

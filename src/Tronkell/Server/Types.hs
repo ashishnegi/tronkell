@@ -8,10 +8,11 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 
 type NetworkChans = (Chan InMessage, Chan (UserID, OutMessage))
+type Users = M.Map UserID User
 
 data Server = Server { serverGameConfig :: Game.GameConfig
                      , serverConfig     :: ServerConfig
-                     , serverUsers      :: MVar (M.Map UserID User)
+                     , serverUsers      :: MVar Users
                      , networkChans     :: NetworkChans
                      , serverChan       :: TChan InMessage
                      , clientsChan      :: Chan OutMessage
@@ -52,3 +53,7 @@ data OutMessage = GameReady   Game.GameConfig [Game.Player]
                 deriving (Show)
 
 data ServerSignals = GameReadySignal Game.GameConfig [Game.Player]
+
+data UserMessage = UserInMessage InMessage
+                 | MoveAllToStatus UserStatus
+                 | NewUser User
