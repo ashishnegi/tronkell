@@ -147,7 +147,7 @@ playClient clientId inChan Server{..} = do
 -- Adds user to user list and returns whether all users are ready
 updateUserReady :: UserID -> M.Map UserID User -> IO (M.Map UserID User, Bool)
 updateUserReady clientId users =
-  let newUsers   = M.adjust (\u -> u { userState = Ready }) clientId users
+  let newUsers   = usersAfterMsg (UserInMessage (PlayerReady clientId)) users
       -- We have at least 2 users, and all users are ready
       ready      = length users > 1 && all ((Ready ==) . userState) newUsers
   in return (newUsers, ready)
